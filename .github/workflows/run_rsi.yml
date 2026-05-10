@@ -1,0 +1,31 @@
+name: Run RSI Tracker
+
+on:
+  schedule:
+    - cron: "0 12 * * *"  # runs daily (UTC time)
+  workflow_dispatch:
+
+jobs:
+  run-script:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run script
+        run: python rsi_tracker.py
+
+      - name: Upload results
+        uses: actions/upload-artifact@v3
+        with:
+          name: rsi-output
+          path: rsi_output.csv
