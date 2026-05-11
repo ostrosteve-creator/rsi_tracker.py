@@ -66,7 +66,6 @@ for ticker in TICKERS:
     except Exception as e:
         print(f"Error processing {ticker}: {e}")
 
-dex=False)
 # Output results
 results = pd.DataFrame(rows)
 
