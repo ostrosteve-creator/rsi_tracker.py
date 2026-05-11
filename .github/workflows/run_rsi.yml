@@ -21,9 +21,13 @@ jobs:
       - name: Install dependencies
         run: pip install -r requirements.txt
 
-      - name: Run script
-        run: python rsi_tracker.py
-
+            - name: Run script
+        run: |
+          python rsi_tracker.py
+          echo "----- FILE LIST -----"
+          ls -la
+          echo "----- CSV CONTENT -----"
+          cat rsi_output.csv
       - name: Upload results
         uses: actions/upload-artifact@v4
         with:
