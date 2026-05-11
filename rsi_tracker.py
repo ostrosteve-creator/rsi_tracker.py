@@ -1,10 +1,7 @@
 import yfinance as yf
 import pandas as pd
 
-# Tickers you care about
 TICKERS = ["SMH", "SOXX", "INTC", "NVDA", "AMD", "AVGO"]
-
-# How much history to pull
 PERIOD = "5y"
 
 def calculate_rsi(prices, window=14):
@@ -12,16 +9,15 @@ def calculate_rsi(prices, window=14):
     gain = delta.clip(lower=0)
     loss = -delta.clip(upper=0)
 
-    avg_gain = gain.ewm(alpha=1/window, adjust=False).mean()
-    avg_loss = loss.ewm(alpha=1/window, adjust=False).mean()
+    avg_gain = gain.ewm(alpha=1 / window, adjust=False).mean()
+    avg_loss = loss.ewm(alpha=1 / window, adjust=False).mean()
 
     rs = avg_gain / avg_loss
-    rsi = 100 - (100 / (1 + rs))
-    return rsi
+    return 100 - (100 / (1 + rs))
 
 def signal_from_rsi(rsi):
     if rsi >= 90:
-        return "🚨 EXTREME (historical danger zone)"
+        return "EXTREME historical danger zone"
     elif rsi >= 85:
         return "Extreme / parabolic risk"
     elif rsi >= 75:
@@ -30,43 +26,41 @@ def signal_from_rsi(rsi):
         return "Overbought"
     elif rsi <= 30:
         return "Oversold"
-    else:
-        return "Neutral"
+    return "Neutral"
 
 rows = []
 
 for ticker in TICKERS:
-    try:
-        data = yf.download(ticker, period=PERIOD, auto_adjust=True, progress=False)
+    print(f"Downloading {ticker}...")
 
-        if data.empty:
-            print(f"No data for {ticker}")
-            continue
+    data = yf.download(ticker, period=PERIOD, auto_adjust=True, progress=False)
 
-        daily_close = data["Close"]
-        weekly_close = daily_close.resample("W-FRI").last()
-        monthly_close = daily_close.resample("ME").last()
+    if data.empty:
+        print(f"No data returned for {ticker}")
+        continue
 
-        daily_rsi = calculate_rsi(daily_close).iloc[-1]
-        weekly_rsi = calculate_rsi(weekly_close).iloc[-1]
-        monthly_rsi = calculate_rsi(monthly_close).iloc[-1]
+    close = data["Close"]
 
-        rows.append({
-            "Ticker": ticker,
-            "Daily RSI": round(float(daily_rsi), 2),
-            "Weekly RSI": round(float(weekly_rsi), 2),
-            "Monthly RSI": round(float(monthly_rsi), 2),
-            "Signal": signal_from_rsi(monthly_rsi)
-        })
+    # Fix if yfinance returns a weird 2D column
+    if isinstance(close, pd.DataFrame):
+        close = close.iloc[:, 0]
 
-        # 🔥 Your key alert (what you care about)
-        if monthly_rsi >= 90:
-            print(f"🚨 {ticker} MONTHLY RSI ABOVE 90 — EXTREME CONDITION")
+    daily_rsi = calculate_rsi(close).dropna()
+    weekly_rsi = calculate_rsi(close.resample("W-FRI").last()).dropna()
+    monthly_rsi = calculate_rsi(close.resample("M").last()).dropna()
 
-    except Exception as e:
-        print(f"Error processing {ticker}: {e}")
+    if daily_rsi.empty or weekly_rsi.empty or monthly_rsi.empty:
+        print(f"Not enough RSI data for {ticker}")
+        continue
 
-# Output results
+    rows.append({
+        "Ticker": ticker,
+        "Daily RSI": round(float(daily_rsi.iloc[-1]), 2),
+        "Weekly RSI": round(float(weekly_rsi.iloc[-1]), 2),
+        "Monthly RSI": round(float(monthly_rsi.iloc[-1]), 2),
+        "Signal": signal_from_rsi(float(monthly_rsi.iloc[-1]))
+    })
+
 results = pd.DataFrame(rows)
 
 print("\n=== RSI SUMMARY ===")
