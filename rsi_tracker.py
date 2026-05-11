@@ -66,10 +66,13 @@ for ticker in TICKERS:
     except Exception as e:
         print(f"Error processing {ticker}: {e}")
 
+dex=False)
 # Output results
 results = pd.DataFrame(rows)
+
 print("\n=== RSI SUMMARY ===")
 print(results)
+print("Rows collected:", len(rows))
 
-# Save to file (this is what GitHub uploads)
 results.to_csv("rsi_output.csv", index=False)
+print("Saved rsi_output.csv")
